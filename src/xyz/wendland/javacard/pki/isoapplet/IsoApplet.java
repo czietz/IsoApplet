@@ -40,6 +40,9 @@ import javacard.security.CryptoException;
 import javacard.security.Signature;
 import javacard.security.RandomData;
 
+// from jcopx-2.4.1.R3.jar
+import com.nxp.id.jcopx.SignatureX;
+
 /**
  * \brief The IsoApplet class.
  *
@@ -54,8 +57,8 @@ import javacard.security.RandomData;
  */
 public class IsoApplet extends Applet implements ExtendedLength {
     /* API Version */
-    public static final byte API_VERSION_MAJOR = (byte) 0x00;
-    public static final byte API_VERSION_MINOR = (byte) 0x06;
+    public static final byte API_VERSION_MAJOR = (byte) 0x01;
+    public static final byte API_VERSION_MINOR = (byte) 0x01; // 01 to differential from upstream build
 
     /* Card-specific configuration */
     public static final boolean DEF_EXT_APDU = false;
@@ -97,7 +100,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
     private static final byte ALG_RSA_PAD_PKCS1 = (byte) 0x11;
 
     private static final byte ALG_GEN_EC = (byte) 0xEC;
-    private static final byte ALG_ECDSA_SHA1 = (byte) 0x21;
+    private static final byte ALG_ECDSA = (byte) 0x21;
 
     private static final short LENGTH_EC_FP_224 = 224;
     private static final short LENGTH_EC_FP_256 = 256;
@@ -184,7 +187,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
         rsaPkcs1Cipher = Cipher.getInstance(Cipher.ALG_RSA_PKCS1, false);
 
         try {
-            ecdsaSignature = Signature.getInstance(Signature.ALG_ECDSA_SHA, false);
+            ecdsaSignature = SignatureX.getInstance(SignatureX.ALG_ECDSA_PLAIN, false);
             api_features |= API_FEATURE_ECC;
         } catch (CryptoException e) {
             if(e.getReason() == CryptoException.NO_SUCH_ALGORITHM) {
@@ -1160,7 +1163,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
                     ISOException.throwIt(ISO7816.SW_DATA_INVALID);
                 }
 
-            } else if(algRef == ALG_ECDSA_SHA1) {
+            } else if(algRef == ALG_ECDSA) {
                 // Key reference must point to a EC private key.
                 if(keys[privKeyRef].getType() != KeyBuilder.TYPE_EC_FP_PRIVATE) {
                     ISOException.throwIt(ISO7816.SW_DATA_INVALID);
@@ -1344,7 +1347,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
             apdu.sendBytesLong(ram_buf, (short) 0, sigLen);
             break;
 
-        case ALG_ECDSA_SHA1:
+        case ALG_ECDSA:
             // Get the key - it must be a EC private key,
             // checks have been done in MANAGE SECURITY ENVIRONMENT.
             ECPrivateKey ecKey = (ECPrivateKey) keys[currentPrivateKeyRef[0]];
