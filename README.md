@@ -27,6 +27,14 @@ It targets smartcards with Java Card version >= 2.2.2.
 The ECDSA implementation with Java Card version 2.2.2 is hardly usable in practice because it requires on-card hash generation.
 If your smartcard implements javacardx.apdu.ExtendedLength and IsoApplet is configured with `DEF_EXT_APDU` in `IsoApplet.java`, you can use extended APDUs.
 
+## Version for NXP JCOP 2.4.1 R3 cards (v1.01 in this fork)
+
+Can be found in the [jcop_241_card](https://github.com/czietz/IsoApplet/tree/jcop_241_card) branch.
+
+NXP JCOP 2.4.1 R3 Java Cards – while based on Java Card 2.2.2 – offer a proprietary API that allows _off-card_  hash generation for ECDSA, enabling algorithms such as `ecdsa-sha2-nistp256`, used by SSH. This has been tested on a NXP J3A081 card, using OpenSC: `pkcs11-tool.exe --login --keypairgen --key-type ec:secp256r1 --usage-sign`. Note that (at least) the NXP J3A081 card supports a maximum EC key bit length of 320 bits, so the `nistp384` and `nistp521` curves cannot be used.
+
+Sadly, the required NXP library _jcopx-2.4.1.R3.jar_ cannot be distributed freely. But maybe you will manage to find it. 😉
+
 # Build process
 This project uses [ant-javacard](https://github.com/martinpaljak/ant-javacard) to build cap-files.
 After cloning the IsoApplet repository, all you have to do is:
