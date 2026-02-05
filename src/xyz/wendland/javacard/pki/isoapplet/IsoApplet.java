@@ -1351,14 +1351,21 @@ public class IsoApplet extends Applet implements ExtendedLength {
             // Get the key - it must be a EC private key,
             // checks have been done in MANAGE SECURITY ENVIRONMENT.
             ECPrivateKey ecKey = (ECPrivateKey) keys[currentPrivateKeyRef[0]];
+            final short ecByteLen = (ecKey.getSize()%8 == 0) ? (short)(ecKey.getSize()/8) : (short)(ecKey.getSize()/8+1);
 
-
-            if((short)(ecKey.getSize()/8) != lc) {
+            if(lc > ecByteLen) {
                 ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
             }
 
             ecdsaSignature.init(ecKey, Signature.MODE_SIGN);
-            sigLen = ecdsaSignature.sign(buf, offset_cdata, lc, ram_buf, (short) 0);
+            if (lc == ecByteLen) {
+                sigLen = ecdsaSignature.sign(buf, offset_cdata, lc, ram_buf, (short) 0);
+            } else {
+                // less data than curve len, fill up with zeros
+                Util.arrayFillNonAtomic(ram_buf, (short)0, (short)(ecByteLen-lc), (byte)0x00);
+                Util.arrayCopyNonAtomic(buf, offset_cdata, ram_buf, (short)(ecByteLen-lc), lc);
+                sigLen = ecdsaSignature.sign(ram_buf, (short)0, ecByteLen, ram_buf, (short) 0);
+            }
 
             // A single short APDU can handle 256 bytes - only one send operation neccessary.
             le = apdu.setOutgoing();
