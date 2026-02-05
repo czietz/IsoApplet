@@ -1310,7 +1310,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
     private void computeDigitalSignature(APDU apdu) throws ISOException {
         byte[] buf = apdu.getBuffer();
         short offset_cdata;
-        short lc;
+        short lc, le;
         short sigLen = 0;
 
         // Receive.
@@ -1339,7 +1339,7 @@ public class IsoApplet extends Applet implements ExtendedLength {
             }
 
             // A single short APDU can handle 256 bytes - only one send operation neccessary.
-            short le = apdu.setOutgoing();
+            le = apdu.setOutgoing();
             if(le < sigLen) {
                 ISOException.throwIt(ISO7816.SW_CORRECT_LENGTH_00);
             }
@@ -1352,9 +1352,21 @@ public class IsoApplet extends Applet implements ExtendedLength {
             // checks have been done in MANAGE SECURITY ENVIRONMENT.
             ECPrivateKey ecKey = (ECPrivateKey) keys[currentPrivateKeyRef[0]];
 
+
+            if((short)(ecKey.getSize()/8) != lc) {
+                ISOException.throwIt(ISO7816.SW_WRONG_LENGTH);
+            }
+
             ecdsaSignature.init(ecKey, Signature.MODE_SIGN);
-            sigLen = ecdsaSignature.sign(buf, offset_cdata, lc, buf, (short) 0);
-            apdu.setOutgoingAndSend((short) 0, sigLen);
+            sigLen = ecdsaSignature.sign(buf, offset_cdata, lc, ram_buf, (short) 0);
+
+            // A single short APDU can handle 256 bytes - only one send operation neccessary.
+            le = apdu.setOutgoing();
+            if(le < sigLen) {
+                ISOException.throwIt(ISO7816.SW_CORRECT_LENGTH_00);
+            }
+            apdu.setOutgoingLength(sigLen);
+            apdu.sendBytesLong(ram_buf, (short) 0, sigLen);
 
             break;
 
